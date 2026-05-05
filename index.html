@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WhisperBox — Secure Messaging</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- Loading -->
+<div id="loading-overlay" style="display:none;">
+  <div class="big-spinner"></div>
+  <p id="loading-text">Restoring session…</p>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 4l6 2.18V11c0 3.5-2.33 6.79-6 7.93C8.33 17.79 6 14.5 6 11V7.18L12 5z"/></svg>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span class="auth-logo-name">WhisperBox</span>
+          <span class="auth-logo-tag">E2EE</span>
+        </div>
+        <div style="font-size:12px;color:var(--gray-400);margin-top:1px;">End-to-end encrypted messaging</div>
+      </div>
+    </div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchTab('login')">Sign in</button>
+      <button class="auth-tab" onclick="switchTab('register')">Create account</button>
+    </div>
+
+    <div id="auth-error" class="error-msg"></div>
+    <div id="keygen-status" class="keygen-status">
+      <div class="spinner"></div>
+      <span id="keygen-text">Generating encryption keys…</span>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="login-form">
+      <div class="field">
+        <label>Username</label>
+        <input type="text" id="login-username" placeholder="your_username" autocomplete="username">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <div class="password-wrap">
+          <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+          <button type="button" class="eye-btn" onclick="togglePasswordVisibility('login-password', this)" aria-label="Toggle password visibility">
+            <svg id="eye-icon-login" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="doLogin()">Sign in</button>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="register-form" style="display:none;">
+      <div class="field">
+        <label>Username</label>
+        <input type="text" id="reg-username" placeholder="your_username" autocomplete="username">
+      </div>
+      <div class="field">
+        <label>Display name</label>
+        <input type="text" id="reg-display" placeholder="Your Name">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <div class="password-wrap">
+          <input type="password" id="reg-password" placeholder="Min. 8 characters" autocomplete="new-password">
+          <button type="button" class="eye-btn" onclick="togglePasswordVisibility('reg-password', this)" aria-label="Toggle password visibility">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="doRegister()">Create account</button>
+    </div>
+
+    <div class="auth-note">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+      Your private key never leaves this device
+    </div>
+  </div>
+</div>
+
+<!-- APP SCREEN -->
+<div id="app-screen">
+  <div class="app-layout">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-brand">
+          <div class="brand-left">
+            <div class="brand-icon">
+              <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 4l6 2.18V11c0 3.5-2.33 6.79-6 7.93C8.33 17.79 6 14.5 6 11V7.18L12 5z"/></svg>
+            </div>
+            <span class="brand-name">WhisperBox</span>
+          </div>
+          <div class="ws-indicator">
+            <div class="ws-dot" id="ws-dot"></div>
+            <span id="ws-label">—</span>
+          </div>
+        </div>
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="search-input" placeholder="Search or start new chat…" oninput="onSearch(this.value)">
+        </div>
+      </div>
+
+      <div id="conv-section-label" class="sidebar-section-label">Messages</div>
+
+      <div class="conv-list" id="conv-list">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+          <span>No conversations yet.<br>Search for someone to message.</span>
+        </div>
+      </div>
+
+      <div class="search-results-list" id="search-results-list"></div>
+
+      <div class="sidebar-footer">
+        <div class="user-menu" id="user-menu">
+          <div class="user-menu-item" onclick="copyUsername()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+            Copy username
+          </div>
+          <div class="user-menu-item danger" onclick="doLogout()">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+            Sign out
+          </div>
+        </div>
+        <div class="user-pill" id="user-pill-btn" onclick="toggleUserMenu()">
+          <div class="user-avatar-sm" id="sidebar-avatar">--</div>
+          <span class="user-pill-name" id="sidebar-username">…</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHAT -->
+    <div class="chat-area" id="chat-area">
+      <div class="chat-welcome" id="chat-welcome">
+        <div class="chat-welcome-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 4l6 2.18V11c0 3.5-2.33 6.79-6 7.93C8.33 17.79 6 14.5 6 11V7.18L12 5z"/></svg>
+        </div>
+        <h2>Your messages are private</h2>
+        <p>Search for someone above to start an end-to-end encrypted conversation.</p>
+      </div>
+
+      <div id="chat-window" style="display:none;flex-direction:column;overflow:hidden;">
+        <div class="chat-header" id="chat-header">
+          <button class="back-btn" id="back-btn" onclick="closeChat()" style="display:none;" aria-label="Back">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+          </button>
+          <div class="chat-header-avatar" id="chat-hdr-avatar">--</div>
+          <div class="chat-header-info">
+            <div class="chat-header-name" id="chat-hdr-name">—</div>
+            <div class="chat-header-status">
+              <div class="status-dot" id="chat-status-dot"></div>
+              <span id="chat-status-text">Offline</span>
+            </div>
+          </div>
+          <div class="e2ee-badge">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+            End-to-end encrypted
+          </div>
+        </div>
+
+        <div class="messages-area" id="messages-area"></div>
+
+        <div class="chat-input-area">
+          <div class="chat-input-row">
+            <textarea id="msg-input" placeholder="Message…" rows="1" onkeydown="onMsgKeydown(event)" oninput="autoResize(this)"></textarea>
+            <button class="send-btn" id="send-btn" onclick="sendMessage()">
+              <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            </button>
+          </div>
+          <div class="chat-input-note">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+            Messages are encrypted before leaving your device
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="js/db.js"></script>
+<script src="js/crypto.js"></script>
+<script src="js/api.js"></script>
+<script src="js/state.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/messages.js"></script>
+<script src="js/websocket.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
