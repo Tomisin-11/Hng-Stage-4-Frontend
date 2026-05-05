@@ -831,3 +831,308 @@ body {
 .send-btn:disabled svg {
   opacity: 0.6;
 }
+
+/* ═══════════════════════════════════════════════════════
+   NEW ADDITIONS v2
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Quick-unlock banner ── */
+.quick-unlock-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--green-50);
+  border: 1px solid var(--green-200);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 20px;
+  color: var(--green-800);
+}
+.quick-unlock-banner svg {
+  width: 18px;
+  height: 18px;
+  fill: var(--green-600);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.quick-unlock-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.quick-unlock-text strong { color: var(--green-700); }
+.quick-unlock-text span { color: var(--green-600); }
+
+/* ── Back button — always visible when in a chat ── */
+.back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--gray-600);
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+  margin-right: 4px;
+}
+.back-btn:hover { background: var(--gray-100); color: var(--green-700); }
+.back-btn svg { width: 22px; height: 22px; }
+
+/* ── Attach button ── */
+.attach-btn {
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--gray-400);
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+}
+.attach-btn:hover { color: var(--green-600); background: var(--green-50); }
+.attach-btn svg { width: 20px; height: 20px; }
+
+/* ── File preview strip ── */
+.file-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--gray-100);
+}
+.file-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--green-50);
+  border: 1px solid var(--green-200);
+  border-radius: 20px;
+  padding: 5px 10px 5px 8px;
+  font-size: 12px;
+  color: var(--green-800);
+  max-width: 200px;
+}
+.file-chip svg { width: 14px; height: 14px; fill: var(--green-600); flex-shrink: 0; }
+.file-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-chip button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--green-600);
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 0 0 2px;
+  flex-shrink: 0;
+}
+.file-chip button:hover { color: #e74c3c; }
+
+/* ── Message actions (edit/delete) ── */
+.msg-actions {
+  display: flex;
+  align-items: flex-start;
+  margin-left: 4px;
+  position: relative;
+}
+.msg-more-btn {
+  opacity: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  color: var(--gray-400);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, opacity 0.15s;
+}
+.msg-more-btn svg { width: 16px; height: 16px; }
+.msg-more-btn:hover { background: var(--gray-100); color: var(--gray-600); }
+.msg-group:hover .msg-more-btn { opacity: 1; }
+
+.msg-ctx-menu {
+  position: absolute;
+  right: 0;
+  top: 28px;
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  padding: 6px;
+  min-width: 140px;
+  box-shadow: var(--shadow);
+  z-index: 50;
+  display: none;
+}
+.msg-ctx-menu.open { display: block; }
+.msg-ctx-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--gray-700);
+  transition: background 0.1s;
+}
+.msg-ctx-item:hover { background: var(--gray-50); }
+.msg-ctx-item.danger { color: #e74c3c; }
+.msg-ctx-item.danger:hover { background: #fff0f0; }
+.msg-ctx-item svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+/* ── Message edit inline ── */
+.msg-edit-wrap { display: flex; flex-direction: column; gap: 8px; }
+.msg-edit-input {
+  width: 100%;
+  min-width: 200px;
+  background: white;
+  border: 1.5px solid var(--green-400);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-family: var(--font);
+  font-size: 14px;
+  color: var(--gray-800);
+  resize: none;
+  outline: none;
+}
+.msg-edit-actions { display: flex; gap: 6px; justify-content: flex-end; }
+.msg-edit-save, .msg-edit-cancel {
+  padding: 5px 12px;
+  border: none;
+  border-radius: 6px;
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.msg-edit-save { background: var(--green-500); color: white; }
+.msg-edit-save:hover { background: var(--green-600); }
+.msg-edit-cancel { background: var(--gray-100); color: var(--gray-600); }
+.msg-edit-cancel:hover { background: var(--gray-200); }
+
+.msg-edited { font-size: 11px; color: var(--gray-400); font-style: italic; margin-left: 4px; }
+
+/* ── File message bubbles ── */
+.msg-bubble--file {
+  padding: 8px !important;
+  background: transparent !important;
+  border: 1.5px solid var(--green-200) !important;
+}
+.mine .msg-bubble--file {
+  border-color: rgba(255,255,255,0.35) !important;
+}
+.msg-image {
+  display: block;
+  max-width: 240px;
+  max-height: 200px;
+  border-radius: 8px;
+  cursor: zoom-in;
+  object-fit: cover;
+  width: 100%;
+}
+.msg-filename {
+  font-size: 11px;
+  color: var(--gray-500);
+  margin-top: 4px;
+  text-align: center;
+}
+.mine .msg-filename { color: rgba(255,255,255,0.7); }
+.msg-file-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  text-decoration: none;
+  color: var(--green-800);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+.msg-file-link:hover { background: var(--green-50); }
+.msg-file-link svg { width: 18px; height: 18px; fill: var(--green-600); flex-shrink: 0; }
+.msg-file-link span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.download-icon { width: 16px !important; height: 16px !important; }
+.mine .msg-file-link { color: white; }
+.mine .msg-file-link svg { fill: rgba(255,255,255,0.85); }
+.mine .msg-file-link:hover { background: rgba(255,255,255,0.15); }
+
+/* ── Image lightbox ── */
+.img-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.img-lightbox.open { display: flex; }
+.img-lightbox-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  cursor: zoom-out;
+}
+.img-lightbox-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.img-lightbox-inner img {
+  max-width: 100%;
+  max-height: 80vh;
+  border-radius: 10px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+  object-fit: contain;
+}
+.lb-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: rgba(255,255,255,0.8);
+  font-size: 13px;
+}
+.lb-footer span { flex: 1; }
+.lb-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.1);
+  color: white;
+  font-size: 13px;
+  font-family: var(--font);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.lb-btn:hover { background: rgba(255,255,255,0.2); }
+.lb-btn svg { width: 14px; height: 14px; fill: white; }
+.lb-close { border-color: rgba(255,100,100,0.4); }
+.lb-close:hover { background: rgba(255,80,80,0.25); }
+
+/* ── msg-row needs relative for ctx menu ── */
+.msg-row { position: relative; }
+
+/* ── Mobile: hide back-btn visibility fix ── */
+@media (max-width: 580px) {
+  .msg-more-btn { opacity: 1; }
+}

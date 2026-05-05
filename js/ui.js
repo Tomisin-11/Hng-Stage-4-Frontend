@@ -2,9 +2,6 @@
 // ui.js — UI helpers, rendering, DOM utilities
 // ═══════════════════════════════════════════════════════
 
-/**
- * Escapes HTML special characters to prevent XSS.
- */
 function esc(str) {
   return String(str)
     .replace(/&/g, '&amp;')
@@ -13,9 +10,6 @@ function esc(str) {
     .replace(/"/g, '&quot;');
 }
 
-/**
- * Formats an ISO timestamp as a human-friendly time or date string.
- */
 function formatTime(iso) {
   const d = new Date(iso);
   const now = new Date();
@@ -24,9 +18,6 @@ function formatTime(iso) {
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
-/**
- * Shows a brief toast notification.
- */
 function toast(msg, duration = 3000) {
   const el = document.getElementById('toast');
   el.textContent = msg;
@@ -34,41 +25,33 @@ function toast(msg, duration = 3000) {
   setTimeout(() => el.classList.remove('show'), duration);
 }
 
-/**
- * Shows/hides the user context menu.
- */
 function toggleUserMenu() {
   document.getElementById('user-menu').classList.toggle('open');
 }
 
-// Close user menu when clicking outside
 document.addEventListener('click', e => {
   const menu = document.getElementById('user-menu');
   const pill = document.getElementById('user-pill-btn');
   if (!menu.contains(e.target) && !pill.contains(e.target)) {
     menu.classList.remove('open');
   }
+
+  // Close any open message context menu on outside click
+  if (!e.target.closest('.msg-ctx-menu') && !e.target.closest('.msg-more-btn')) {
+    document.querySelectorAll('.msg-ctx-menu.open').forEach(m => m.classList.remove('open'));
+  }
 });
 
-/**
- * Copies the current user's username to the clipboard.
- */
 function copyUsername() {
   navigator.clipboard.writeText(state.me?.username || '').then(() => toast('Username copied!'));
   document.getElementById('user-menu').classList.remove('open');
 }
 
-/**
- * Auto-resizes the message textarea as the user types.
- */
 function autoResize(el) {
   el.style.height = 'auto';
   el.style.height = Math.min(el.scrollHeight, 120) + 'px';
 }
 
-/**
- * Sends a message on Enter (but not Shift+Enter).
- */
 function onMsgKeydown(e) {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
@@ -76,9 +59,6 @@ function onMsgKeydown(e) {
   }
 }
 
-/**
- * Updates the WebSocket connection status indicator.
- */
 function setWsState(s) {
   state.wsState = s;
   const dot = document.getElementById('ws-dot');
@@ -87,10 +67,6 @@ function setWsState(s) {
   label.textContent = s === 'connected' ? 'Live' : s === 'connecting' ? 'Connecting' : 'Offline';
 }
 
-/**
- * Toggles a password input between visible and hidden,
- * and swaps the eye icon accordingly.
- */
 function togglePasswordVisibility(inputId, btn) {
   const input = document.getElementById(inputId);
   const isHidden = input.type === 'password';
@@ -105,7 +81,6 @@ function togglePasswordVisibility(inputId, btn) {
         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
       </svg>`;
 }
-
 
 function switchTab(tab) {
   document.querySelectorAll('.auth-tab').forEach((t, i) => {
@@ -136,9 +111,20 @@ function hideKeygen() {
   document.getElementById('keygen-status').style.display = 'none';
 }
 
-/**
- * Renders the conversation list in the sidebar.
- */
+// ─────────────────────────────────────────────────────
+// Message context menu toggle
+// ─────────────────────────────────────────────────────
+function toggleMsgMenu(msgId) {
+  const menu = document.getElementById(`ctx-${msgId}`);
+  if (!menu) return;
+  const wasOpen = menu.classList.contains('open');
+  document.querySelectorAll('.msg-ctx-menu.open').forEach(m => m.classList.remove('open'));
+  if (!wasOpen) menu.classList.add('open');
+}
+
+// ─────────────────────────────────────────────────────
+// renderConvList
+// ─────────────────────────────────────────────────────
 function renderConvList() {
   const el = document.getElementById('conv-list');
   if (!state.conversations.length) {
@@ -170,9 +156,9 @@ function renderConvList() {
   }).join('');
 }
 
-/**
- * Renders all decrypted messages for a given conversation.
- */
+// ─────────────────────────────────────────────────────
+// renderMessages — with file support, edit/delete CRUD
+// ─────────────────────────────────────────────────────
 function renderMessages(userId) {
   const area = document.getElementById('messages-area');
   const msgs = state.messages[userId] || [];
@@ -203,15 +189,57 @@ function renderMessages(userId) {
     const partner = state.activeConv;
     const initials = (partner?.display_name || partner?.username || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
-    const bubbleContent = m.text
-      ? `<div class="msg-bubble">${esc(m.text)}</div>`
-      : `<div class="msg-bubble"><span class="msg-decrypt-fail">🔒 Could not decrypt</span></div>`;
+    // Parse file messages
+    let bubbleContent;
+    if (m.text) {
+      let parsed = null;
+      try { parsed = JSON.parse(m.text); } catch {}
 
-    html += `<div class="msg-group ${side}">`;
+      if (parsed && parsed.type === 'file' && parsed.data) {
+        const isImage = parsed.mime && parsed.mime.startsWith('image/');
+        if (isImage) {
+          bubbleContent = `<div class="msg-bubble msg-bubble--file">
+            <img class="msg-image" src="${parsed.data}" alt="${esc(parsed.name)}" onclick="openImageLightbox('${parsed.data}', '${esc(parsed.name)}')" />
+            <div class="msg-filename">${esc(parsed.name)}</div>
+          </div>`;
+        } else {
+          bubbleContent = `<div class="msg-bubble msg-bubble--file">
+            <a class="msg-file-link" href="${parsed.data}" download="${esc(parsed.name)}">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z"/></svg>
+              <span>${esc(parsed.name)}</span>
+              <svg class="download-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+            </a>
+          </div>`;
+        }
+      } else {
+        const editedTag = m.edited ? ' <span class="msg-edited">(edited)</span>' : '';
+        bubbleContent = `<div class="msg-bubble">${esc(m.text)}${editedTag}</div>`;
+      }
+    } else {
+      bubbleContent = `<div class="msg-bubble"><span class="msg-decrypt-fail">🔒 Could not decrypt</span></div>`;
+    }
+
+    // CRUD context menu — only for own messages
+    const ctxMenu = m.isMine && m.text && !m.text.includes('"type":"file"') ? `
+      <button class="msg-more-btn" onclick="toggleMsgMenu('${m.id}')" aria-label="Message options">
+        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+      </button>
+      <div class="msg-ctx-menu" id="ctx-${m.id}">
+        <div class="msg-ctx-item" onclick="startEditMessage('${m.id}', ${JSON.stringify(m.text || '').replace(/'/g, "&#39;")}, '${userId}'); toggleMsgMenu('${m.id}')">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+          Edit
+        </div>
+        <div class="msg-ctx-item danger" onclick="deleteMessage('${m.id}', '${userId}'); toggleMsgMenu('${m.id}')">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+          Delete
+        </div>
+      </div>` : '';
+
+    html += `<div class="msg-group ${side}" data-msg-id="${m.id}">`;
     if (!m.isMine) {
       html += `<div class="msg-row"><div class="msg-avatar-xs">${initials}</div>${bubbleContent}</div>`;
     } else {
-      html += `<div class="msg-row">${bubbleContent}</div>`;
+      html += `<div class="msg-row">${bubbleContent}<div class="msg-actions">${ctxMenu}</div></div>`;
     }
     html += `<div class="msg-time">${timeStr}</div></div>`;
   });
@@ -220,9 +248,49 @@ function renderMessages(userId) {
   area.scrollTop = area.scrollHeight;
 }
 
-/**
- * Updates online/offline status in the chat header and conversation list.
- */
+// ─────────────────────────────────────────────────────
+// Image lightbox
+// ─────────────────────────────────────────────────────
+function openImageLightbox(src, name) {
+  let lb = document.getElementById('img-lightbox');
+  if (!lb) {
+    lb = document.createElement('div');
+    lb.id = 'img-lightbox';
+    lb.className = 'img-lightbox';
+    lb.innerHTML = `<div class="img-lightbox-backdrop" onclick="closeImageLightbox()"></div>
+      <div class="img-lightbox-inner">
+        <img id="lb-img" src="" alt="" />
+        <div class="lb-footer">
+          <span id="lb-name"></span>
+          <a id="lb-dl" download="" class="lb-btn">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+            Download
+          </a>
+          <button class="lb-btn lb-close" onclick="closeImageLightbox()">✕ Close</button>
+        </div>
+      </div>`;
+    document.body.appendChild(lb);
+  }
+  document.getElementById('lb-img').src = src;
+  document.getElementById('lb-img').alt = name;
+  document.getElementById('lb-name').textContent = name;
+  const dl = document.getElementById('lb-dl');
+  dl.href = src;
+  dl.download = name;
+  lb.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeImageLightbox() {
+  const lb = document.getElementById('img-lightbox');
+  if (lb) lb.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeImageLightbox();
+});
+
 function updateOnlineStatus(userId, online) {
   if (state.activeConv?.user_id === userId) {
     document.getElementById('chat-status-dot').className = 'status-dot' + (online ? ' online' : '');
@@ -231,9 +299,6 @@ function updateOnlineStatus(userId, online) {
   renderConvList();
 }
 
-/**
- * Shows/hides the search results panel vs the conversation list.
- */
 function showSearchResults(show) {
   document.getElementById('conv-section-label').textContent = show ? 'Search results' : 'Messages';
   document.getElementById('conv-list').style.display = show ? 'none' : '';

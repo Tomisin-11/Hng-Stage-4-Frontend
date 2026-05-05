@@ -2,10 +2,6 @@
 // app.js — App entry point and session restore
 // ═══════════════════════════════════════════════════════
 
-/**
- * Called after successful login or registration.
- * Populates the sidebar UI, loads conversations, and opens the WebSocket.
- */
 async function enterApp() {
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('app-screen').classList.add('visible');
@@ -15,15 +11,15 @@ async function enterApp() {
   document.getElementById('sidebar-avatar').textContent = initials;
   document.getElementById('sidebar-username').textContent = state.me.display_name || state.me.username;
 
+  // Always reset chat pane on fresh enter
+  document.getElementById('chat-welcome').style.display = 'flex';
+  document.getElementById('chat-window').style.display = 'none';
+  document.getElementById('back-btn').style.display = 'none';
+
   await loadConversations();
   connectWebSocket();
 }
 
-/**
- * Attempts to restore a previous session from IndexedDB.
- * Since the private key cannot be persisted, the user is prompted
- * to re-enter their password to unwrap it. The username is pre-filled.
- */
 async function tryRestoreSession() {
   const overlay = document.getElementById('loading-overlay');
   const loadingText = document.getElementById('loading-text');
@@ -44,20 +40,20 @@ async function tryRestoreSession() {
     state.accessToken = accessToken;
     state.refreshToken = refreshToken;
 
-    // Attempt a token refresh to validate the session
     await doTokenRefresh();
 
     loadingText.textContent = 'Loading profile…';
     const me = await api('GET', '/auth/me');
     state.me = me;
 
-    // Private key can only be restored with the user's password.
-    // Pre-fill the username and show a friendly prompt.
     overlay.style.display = 'none';
+
+    // Show quick-unlock overlay (password needed to restore private key)
     document.getElementById('login-username').value = me.username || '';
-    toast('Welcome back! Enter your password to unlock your keys.', 4000);
+    document.getElementById('quick-unlock-name').textContent = me.display_name || me.username;
+    document.getElementById('quick-unlock-banner').style.display = 'flex';
+    setTimeout(() => document.getElementById('login-password').focus(), 100);
   } catch {
-    // Session is invalid — clear it and show a clean login screen
     await dbDel('session', 'accessToken');
     await dbDel('session', 'refreshToken');
     state.accessToken = null;
@@ -66,38 +62,39 @@ async function tryRestoreSession() {
   }
 }
 
+function hideQuickUnlock() {
+  document.getElementById('quick-unlock-banner').style.display = 'none';
+}
+
 // ═══════════════════════════════════════════════════════
-// MOBILE PANEL SWITCHING
+// BACK BUTTON — works on all screen sizes
 // ═══════════════════════════════════════════════════════
 
 function isMobile() {
   return window.innerWidth <= 580;
 }
 
-/**
- * On mobile: slides the chat panel into view and shows the back button.
- */
 function openChatPanel() {
-  if (!isMobile()) return;
-  document.querySelector('.app-layout').classList.add('chat-open');
+  // Back button always visible when in a chat
   document.getElementById('back-btn').style.display = 'flex';
+  if (isMobile()) {
+    document.querySelector('.app-layout').classList.add('chat-open');
+  }
 }
 
-/**
- * On mobile: slides back to the conversation list.
- */
 function closeChat() {
-  document.querySelector('.app-layout').classList.remove('chat-open');
+  if (isMobile()) {
+    document.querySelector('.app-layout').classList.remove('chat-open');
+  }
   document.getElementById('back-btn').style.display = 'none';
+  document.getElementById('chat-window').style.display = 'none';
+  document.getElementById('chat-welcome').style.display = 'flex';
   state.activeConv = null;
   renderConvList();
 }
 
-// Show/hide back button on resize
 window.addEventListener('resize', () => {
-  const backBtn = document.getElementById('back-btn');
   if (!isMobile()) {
-    backBtn.style.display = 'none';
     document.querySelector('.app-layout').classList.remove('chat-open');
   }
 });

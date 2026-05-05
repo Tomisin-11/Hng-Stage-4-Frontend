@@ -38,6 +38,7 @@ async function doLogin() {
 
     scheduleTokenRefresh(data.expires_in);
     hideKeygen();
+    hideQuickUnlock();
     enterApp();
   } catch (e) {
     hideKeygen();
@@ -94,6 +95,7 @@ async function doRegister() {
 
     scheduleTokenRefresh(data.expires_in);
     hideKeygen();
+    hideQuickUnlock();
     enterApp();
   } catch (e) {
     hideKeygen();

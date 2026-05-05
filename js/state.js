@@ -6,22 +6,21 @@ let state = {
   accessToken: null,
   refreshToken: null,
   me: null,
-  privateKey: null,        // CryptoKey — in-memory only, never persisted
-  publicKey: null,         // CryptoKey
+  privateKey: null,
+  publicKey: null,
   conversations: [],
   activeConv: null,
   onlineUsers: new Set(),
   ws: null,
   wsState: 'disconnected',
   refreshTimer: null,
-  messages: {},            // { [userId]: decryptedMessage[] }
-  unread: {},              // { [userId]: number }
+  messages: {},
+  unread: {},
   searchDebounce: null,
+  editingMsgId: null,
+  editingUserId: null,
 };
 
-/**
- * Resets all state to defaults (used on logout).
- */
 function resetState() {
   if (state.ws) state.ws.close();
   if (state.refreshTimer) clearTimeout(state.refreshTimer);
@@ -40,5 +39,7 @@ function resetState() {
     messages: {},
     unread: {},
     searchDebounce: null,
+    editingMsgId: null,
+    editingUserId: null,
   };
 }
