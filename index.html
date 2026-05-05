@@ -50,12 +50,12 @@
     <div id="login-form">
       <div class="field">
         <label>Username</label>
-        <input type="text" id="login-username" placeholder="your_username" autocomplete="username">
+        <input type="text" id="login-username" placeholder="your_username" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('login-password').focus()">
       </div>
       <div class="field">
         <label>Password</label>
         <div class="password-wrap">
-          <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+          <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
           <button type="button" class="eye-btn" onclick="togglePasswordVisibility('login-password', this)" aria-label="Toggle password visibility">
             <svg id="eye-icon-login" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
@@ -70,16 +70,16 @@
     <div id="register-form" style="display:none;">
       <div class="field">
         <label>Username</label>
-        <input type="text" id="reg-username" placeholder="your_username" autocomplete="username">
+        <input type="text" id="reg-username" placeholder="your_username" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('reg-display').focus()">
       </div>
       <div class="field">
         <label>Display name</label>
-        <input type="text" id="reg-display" placeholder="Your Name">
+        <input type="text" id="reg-display" placeholder="Your Name" onkeydown="if(event.key==='Enter')document.getElementById('reg-password').focus()">
       </div>
       <div class="field">
         <label>Password</label>
         <div class="password-wrap">
-          <input type="password" id="reg-password" placeholder="Min. 8 characters" autocomplete="new-password">
+          <input type="password" id="reg-password" placeholder="Min. 8 characters" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()">
           <button type="button" class="eye-btn" onclick="togglePasswordVisibility('reg-password', this)" aria-label="Toggle password visibility">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>

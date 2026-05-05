@@ -38,30 +38,39 @@ async function openConversation(conv) {
   // Mobile: slide chat panel into view
   openChatPanel();
 
-  document.getElementById('messages-area').innerHTML = `
-    <div class="empty-state" style="padding:40px 0;"><div class="spinner"></div></div>`;
+  // Focus the input
+  setTimeout(() => document.getElementById('msg-input')?.focus(), 100);
+
+  document.getElementById('messages-area').innerHTML =
+    '<div class="empty-state" style="padding:40px 0;"><div class="spinner"></div></div>';
 
   await loadMessages(conv.user_id);
 }
 
 /**
- * Fetches paginated message history for a conversation and decrypts each message.
+ * Fetches paginated message history, deduplicates, and decrypts.
  */
 async function loadMessages(userId) {
   try {
     const msgs = await api('GET', `/conversations/${userId}/messages?limit=50`);
-    const decrypted = await Promise.all(msgs.reverse().map(m => decryptMsg(m)));
-    state.messages[userId] = decrypted;
+    // ── Fix #5: Build a Set of known IDs to deduplicate against WS-delivered msgs ──
+    const existingIds = new Set((state.messages[userId] || []).map(m => m.id));
+    const fresh = msgs.filter(m => !existingIds.has(m.id)).reverse();
+    const decrypted = await Promise.all(fresh.map(m => decryptMsg(m)));
+    // Merge: history first, then any WS messages that arrived while loading
+    const wsOnly = (state.messages[userId] || []).filter(m => !msgs.find(h => h.id === m.id));
+    state.messages[userId] = [...decrypted, ...wsOnly].sort((a, b) =>
+      new Date(a.created_at) - new Date(b.created_at)
+    );
     renderMessages(userId);
   } catch {
     document.getElementById('messages-area').innerHTML =
-      '<div class="empty-state">Failed to load messages.</div>';
+      '<div class="empty-state">Failed to load messages. Please try again.</div>';
   }
 }
 
 /**
- * Decrypts a message object. Uses encryptedKeyForSelf for sent messages,
- * encryptedKey for received messages. Returns null text on failure.
+ * Decrypts a message object. Uses encryptedKeyForSelf for sent messages.
  */
 async function decryptMsg(m) {
   const isMine = m.from_user_id === state.me.id;
@@ -74,17 +83,25 @@ async function decryptMsg(m) {
 /**
  * Encrypts and sends a message to the active conversation.
  * Uses WebSocket if connected, falls back to REST.
+ * ── Fix #1: Input validation + #6: send button disabled during send ──
  */
 async function sendMessage() {
   const input = document.getElementById('msg-input');
+  const sendBtn = document.getElementById('send-btn');
   const text = input.value.trim();
+
+  // Fix #1: validate — no empty or whitespace-only messages
   if (!text || !state.activeConv) return;
+
+  // Fix #6: disable send button during in-flight request
+  sendBtn.disabled = true;
   input.value = '';
-  autoResize(input);
+  // Fix #7: properly reset textarea height
+  input.style.height = 'auto';
+  input.style.height = '24px';
 
   const recipientId = state.activeConv.user_id;
   try {
-    // Fetch recipient's public key fresh each time (key rotation friendly)
     const pkData = await api('GET', `/users/${recipientId}/public-key`);
     const recipientPubKey = await importPublicKeyFromB64(pkData.public_key);
     const payload = await encryptMessage(text, recipientPubKey, state.publicKey);
@@ -92,13 +109,13 @@ async function sendMessage() {
     let sent;
     if (state.ws && state.ws.readyState === WebSocket.OPEN) {
       state.ws.send(JSON.stringify({ event: 'message.send', to: recipientId, payload }));
-      // Optimistic local message
+      // Optimistic local insertion (WS echo may never come back to sender)
       sent = {
         from_user_id: state.me.id,
         to_user_id: recipientId,
         payload,
         created_at: new Date().toISOString(),
-        id: Date.now().toString(),
+        id: `local_${Date.now()}`,
       };
     } else {
       sent = await api('POST', '/messages', { to: recipientId, payload });
@@ -106,7 +123,11 @@ async function sendMessage() {
 
     const decrypted = await decryptMsg(sent);
     if (!state.messages[recipientId]) state.messages[recipientId] = [];
-    state.messages[recipientId].push(decrypted);
+
+    // Deduplicate optimistic local message
+    if (!state.messages[recipientId].some(m => m.id === decrypted.id)) {
+      state.messages[recipientId].push(decrypted);
+    }
     renderMessages(recipientId);
 
     // Upsert conversation to top of list
@@ -116,7 +137,14 @@ async function sendMessage() {
     state.conversations.unshift(conv);
     renderConvList();
   } catch (e) {
+    // Restore the text so the user doesn't lose their message
+    input.value = text;
+    autoResize(input);
     toast('Failed to send: ' + e.message);
+  } finally {
+    // Fix #6: always re-enable send button
+    sendBtn.disabled = false;
+    input.focus();
   }
 }
 

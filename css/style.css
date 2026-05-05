@@ -821,3 +821,13 @@ body {
 }
 .eye-btn:hover { color: var(--green-600); }
 .eye-btn svg { width: 18px; height: 18px; pointer-events: none; }
+
+/* ── SEND BUTTON SENDING STATE ── */
+.send-btn:disabled {
+  background: var(--green-300);
+  cursor: not-allowed;
+  transform: none;
+}
+.send-btn:disabled svg {
+  opacity: 0.6;
+}

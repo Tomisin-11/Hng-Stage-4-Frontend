@@ -44,6 +44,8 @@ async function doTokenRefresh() {
   state.accessToken = data.access_token;
   await dbSet('session', 'accessToken', data.access_token);
   scheduleTokenRefresh(data.expires_in);
+  // Reconnect WebSocket with the new token so it doesn't use the expired one
+  if (typeof connectWebSocket === 'function') connectWebSocket();
 }
 
 /**
